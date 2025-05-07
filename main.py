@@ -195,6 +195,18 @@ def style_excel_output(writer, df):
             cell = worksheet.cell(row=row, column=vm_col)
             cell.number_format = '"$"#,##0.00'
 
+        # Formatar Vacância Média como porcentagem
+        vac_col = df.columns.get_loc('Vacancia Media') + 1
+        for row in range(2, len(df) + 2):
+            cell = worksheet.cell(row=row, column=vac_col)
+            cell.number_format = '0.00%'
+
+        # Formatar Qtd de Imóveis como número inteiro
+        qtd_col = df.columns.get_loc('Qtd Imoveis') + 1
+        for row in range(2, len(df) + 2):
+            cell = worksheet.cell(row=row, column=qtd_col)
+            cell.number_format = '0'
+
         # Adicionar formatação condicional para a coluna Nota
         nota_col = df.columns.get_loc('Nota') + 1
         for row in range(2, len(df) + 2):
@@ -238,9 +250,10 @@ def main():
                     # Calcular nota para cada fundo
                     filtered_df['Nota'] = filtered_df.apply(calculate_score, axis=1)
 
-                    # Selecionar e ordenar colunas
+                    # Selecionar e ordenar colunas (adicionando as novas colunas)
                     final_df = filtered_df[['Código', 'Segmento', 'Dividend Yield', 'P/VP',
-                                            'Valor de Mercado', 'Liquidez', 'Nota']]
+                                            'Valor de Mercado', 'Liquidez', 'Qtd Imoveis',
+                                            'Vacancia Media', 'Nota']]
                     final_df = final_df.sort_values(by=['Nota', 'Dividend Yield'], ascending=[False, False])
 
                     try:

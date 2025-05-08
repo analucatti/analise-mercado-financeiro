@@ -267,8 +267,8 @@ def main():
                         print(f"Total de fundos encontrados: {len(final_df)}")
 
                         if len(final_df) > 0:
-                            print("\nTop 5 fundos:")
-                            print(final_df.head(5).to_string(index=False))
+                            print("\nTop 10 fundos:")
+                            print(final_df.head(10).to_string(index=False))
                     except Exception as e:
                         print(f"\nErro ao salvar o arquivo: {e}")
                 else:

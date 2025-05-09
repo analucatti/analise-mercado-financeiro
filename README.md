@@ -88,9 +88,9 @@ Arquivo requirements.txt:
 
 ```plaintext
 pandas>=1.3.0
-   requests>=2.26.0
-   beautifulsoup4>=4.10.0
-   openpyxl>=3.0.9
+requests>=2.26.0
+beautifulsoup4>=4.10.0
+openpyxl>=3.0.9
 ```   
 
 ### 🚀 Execução

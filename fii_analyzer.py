@@ -94,9 +94,9 @@ def apply_filters(df):
     try:
         # Aplicar filtros
         filtered_df = df[
-            (df['Dividend Yield'] > 0.10) &
-            (df['Dividend Yield'] < 0.20) &
-            (df['P/VP'] > 0.60) &
+            (df['Dividend Yield'] > 0.7) &
+            (df['Dividend Yield'] < 0.25) &
+            (df['P/VP'] > 0.5) &
             (df['P/VP'] < 1.1) &
             (df['Liquidez'] > 1000000) &
             (df['Valor de Mercado'] > 1000000000)

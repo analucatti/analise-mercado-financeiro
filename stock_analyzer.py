@@ -154,14 +154,14 @@ def apply_filters(df):
     try:
         # Aplicar filtros conforme especificado
         filtered_df = df[
-            (df['P/L'] > 3.5) &
+            (df['P/L'] > 3) &
             (df['P/L'] < 12) &
             (df['P/VP'] > 0.5) &
             (df['P/VP'] < 1.1) &
             (df['ROE'] > 0.14) &
-            (df['ROE'] < 0.40) &
+            (df['ROE'] < 0.50) &
             (df['Div.Yield'] > 0.07) &
-            (df['Div.Yield'] < 0.20) &
+            (df['Div.Yield'] < 0.25) &
             (df['Cresc.Rec.5a'] > 0.10) &
             (df['Dív.Brut/Patrim'] < 2) &
             (df['Ltg.2meses'] > 1000000)
@@ -274,9 +274,9 @@ def style_excel_output(writer, df, sheet_name='Top por Setor'):
 
             # Ajustar largura das colunas
             column_letter = get_column_letter(col)
-            worksheet.column_dimensions[column_letter].width = 14
+            worksheet.column_dimensions[column_letter].width = 12
             if df.columns[col - 1] == 'Setor':
-                worksheet.column_dimensions[column_letter].width = 25
+                worksheet.column_dimensions[column_letter].width = 28
 
         # Aplicar estilos aos dados
         for row in range(2, len(df) + 2):

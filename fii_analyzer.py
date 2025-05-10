@@ -1,8 +1,8 @@
 import os
+
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 

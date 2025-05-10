@@ -1,29 +1,75 @@
+import json
 import os
+import time
+
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
-
-def verificar_arquivo_existente(nome_arquivo):
-    """Verifica se o arquivo já existe e pergunta ao usuário se deseja substituí-lo"""
-    if os.path.exists(nome_arquivo):
-        print(f"\nAVISO: O arquivo '{nome_arquivo}' já existe no diretório.")
-        # substituir = input("Deseja substituí-lo? (S/N): ").strip().upper()
-        # return substituir == 'S'
-    return True
+# Dicionário para cache de setores
+SETOR_CACHE_FILE = 'setor_cache.json'
 
 
-def scrape_fundamentus_acoes():
-    url = "https://www.fundamentus.com.br/resultado.php"
+def load_setor_cache():
+    """Carrega o cache de setores do arquivo"""
+    if os.path.exists(SETOR_CACHE_FILE):
+        with open(SETOR_CACHE_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+
+def save_setor_cache(cache):
+    """Salva o cache de setores no arquivo"""
+    with open(SETOR_CACHE_FILE, 'w') as f:
+        json.dump(cache, f)
+
+
+def get_setor(papel, cache):
+    """Obtém o setor de uma ação, usando cache quando possível"""
+    if papel in cache:
+        return cache[papel]
+
+    url = f"https://www.fundamentus.com.br/detalhes.php?papel={papel}"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
 
     try:
         response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Encontrar a tabela de dados básicos
+        table = soup.find('table', {'class': 'w728'})
+        if not table:
+            return "Setor não encontrado"
+
+        # Procurar a linha que contém o setor
+        for row in table.find_all('tr'):
+            cols = row.find_all('td')
+            if len(cols) >= 2 and 'Setor' in cols[0].get_text():
+                setor = cols[1].get_text(strip=True)
+                cache[papel] = setor  # Atualizar cache
+                return setor
+
+        return "Setor não encontrado"
+    except Exception as e:
+        print(f"Erro ao obter setor para {papel}: {e}")
+        return "Erro ao obter setor"
+
+
+def scrape_fundamentus_acoes():
+    """Raspa os dados principais da tabela de resultados"""
+    url = "https://www.fundamentus.com.br/resultado.php"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -35,13 +81,6 @@ def scrape_fundamentus_acoes():
 
         # Extrair cabeçalhos
         headers = [th.get_text(strip=True) for th in table.find('tr').find_all('th')]
-
-        # Verificar se temos todas as colunas necessárias
-        required_columns = ['Papel', 'P/L', 'P/VP', 'Div.Yield', 'ROE', 'Liq.2meses', 'Dív.Brut/ Patrim.', 'Cresc. Rec.5a']
-        if not all(col in headers for col in required_columns):
-            print("Algumas colunas necessárias não foram encontradas na tabela")
-            print(f"Colunas encontradas: {headers}")
-            return None
 
         # Extrair dados das linhas
         data = []
@@ -63,15 +102,17 @@ def scrape_fundamentus_acoes():
 
 
 def clean_and_convert_data(df):
+    """Limpa e converte os dados"""
     try:
-        # Verificar se as colunas necessárias existem
-        required_columns = ['P/L', 'P/VP', 'Div.Yield', 'ROE', 'Liq.2meses', 'Cresc. Rec.5a']
+        # Verificar colunas necessárias
+        required_columns = ['Papel', 'P/L', 'P/VP', 'Div.Yield', 'ROE', 'Liq.2meses', 'Dív.Brut/ Patrim.',
+                            'Cresc. Rec.5a']
         for col in required_columns:
             if col not in df.columns:
                 print(f"Coluna não encontrada: {col}")
                 return None
 
-        # Encontrar a coluna Dív.Brut/ Patrim. (pode ter nomes diferentes)
+        # Encontrar coluna de dívida
         div_patrim_col = None
         for col in df.columns:
             if 'Dív.Brut/ Patrim.' in col:
@@ -93,25 +134,24 @@ def clean_and_convert_data(df):
                                                                                                         '.').astype(
             float) / 100
 
-        # Renomear colunas para nomes consistentes
+        # Renomear colunas
         df = df.rename(columns={
             'Div.Yield': 'Div.Yield',
             'Liq.2meses': 'Ltg.2meses',
-            div_patrim_col: 'Dív.Brut/ Patrim.',
+            div_patrim_col: 'Dív.Brut/Patrim',
             'Cresc. Rec.5a': 'Cresc.Rec.5a'
         })
 
         return df
+
     except Exception as e:
         print(f"Erro ao converter dados: {e}")
         return None
 
 
 def apply_filters(df):
+    """Aplica os filtros especificados ao DataFrame"""
     try:
-        # Encontrar o nome exato da coluna
-        div_patrim_col = [col for col in df.columns if 'Dív.Brut/ Patrim.' in col][0]
-
         # Aplicar filtros conforme especificado
         filtered_df = df[
             (df['P/L'] > 3.5) &
@@ -123,7 +163,7 @@ def apply_filters(df):
             (df['Div.Yield'] > 0.07) &
             (df['Div.Yield'] < 0.20) &
             (df['Cresc.Rec.5a'] > 0.10) &
-            (df[div_patrim_col] < 2) &
+            (df['Dív.Brut/Patrim'] < 2) &
             (df['Ltg.2meses'] > 1000000)
             ].copy()
 
@@ -134,6 +174,7 @@ def apply_filters(df):
 
 
 def calculate_score(row):
+    """Calcula a pontuação para cada ação"""
     try:
         score = 0
 
@@ -168,10 +209,9 @@ def calculate_score(row):
             score += 1
 
         # Dívida Bruta/Patrimônio (quanto menor melhor)
-        div_patrim_col = [col for col in row.index if 'Dív.Brut/ Patrim.' in col][0]
-        if row[div_patrim_col] <= 0.5:
+        if row['Dív.Brut/Patrim'] <= 0.5:
             score += 2
-        elif row[div_patrim_col] <= 1:
+        elif row['Dív.Brut/Patrim'] <= 1:
             score += 1
 
         # Liquidez (quanto maior melhor)
@@ -186,10 +226,34 @@ def calculate_score(row):
         return 0
 
 
-def style_excel_output(writer, df):
+def add_setor_info(df, cache):
+    """Adiciona informações de setor às ações filtradas"""
+    print("\nObtendo setores para as ações selecionadas...")
+    df['Setor'] = df['Papel'].apply(lambda x: get_setor(x, cache))
+    time.sleep(1)  # Delay para não sobrecarregar o servidor
+    return df
+
+
+def get_top_by_sector(df, n=5):
+    """Retorna os top N ações de cada setor"""
+    if df.empty or 'Setor' not in df.columns:
+        return pd.DataFrame()
+
+    # Agrupar por setor e pegar os top N de cada grupo
+    top_by_sector = df.sort_values(['Setor', 'Nota', 'Div.Yield'],
+                                   ascending=[True, False, False]) \
+        .groupby('Setor') \
+        .head(n) \
+        .sort_values(['Setor', 'Nota'], ascending=[True, False])
+
+    return top_by_sector
+
+
+def style_excel_output(writer, df, sheet_name='Top por Setor'):
+    """Formata a saída do Excel"""
     try:
         workbook = writer.book
-        worksheet = workbook['Sheet1']
+        worksheet = workbook[sheet_name]
 
         # Definir estilos
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
@@ -210,7 +274,9 @@ def style_excel_output(writer, df):
 
             # Ajustar largura das colunas
             column_letter = get_column_letter(col)
-            worksheet.column_dimensions[column_letter].width = 15
+            worksheet.column_dimensions[column_letter].width = 14
+            if df.columns[col - 1] == 'Setor':
+                worksheet.column_dimensions[column_letter].width = 25
 
         # Aplicar estilos aos dados
         for row in range(2, len(df) + 2):
@@ -221,41 +287,38 @@ def style_excel_output(writer, df):
 
         # Formatar porcentagens
         for col_name in ['Div.Yield', 'ROE', 'Cresc.Rec.5a']:
-            col_idx = df.columns.get_loc(col_name) + 1
-            for row in range(2, len(df) + 2):
-                cell = worksheet.cell(row=row, column=col_idx)
-                cell.number_format = '0.00%'
+            if col_name in df.columns:
+                col_idx = df.columns.get_loc(col_name) + 1
+                for row in range(2, len(df) + 2):
+                    cell = worksheet.cell(row=row, column=col_idx)
+                    cell.number_format = '0.00%'
 
         # Formatar números decimais
-        for col_name in ['P/L', 'P/VP']:
-            col_idx = df.columns.get_loc(col_name) + 1
-            for row in range(2, len(df) + 2):
-                cell = worksheet.cell(row=row, column=col_idx)
-                cell.number_format = '0.00'
-
-        # Formatar Dív.Brut/ Patrim. (pode ter nomes diferentes)
-        div_patrim_col = [col for col in df.columns if 'Dív.Brut/ Patrim.' in col][0]
-        div_patrim_col_idx = df.columns.get_loc(div_patrim_col) + 1
-        for row in range(2, len(df) + 2):
-            cell = worksheet.cell(row=row, column=div_patrim_col_idx)
-            cell.number_format = '0.00'
+        for col_name in ['P/L', 'P/VP', 'Dív.Brut/Patrim']:
+            if col_name in df.columns:
+                col_idx = df.columns.get_loc(col_name) + 1
+                for row in range(2, len(df) + 2):
+                    cell = worksheet.cell(row=row, column=col_idx)
+                    cell.number_format = '0.00'
 
         # Formatar Liquidez como número inteiro
-        ltg_col = df.columns.get_loc('Ltg.2meses') + 1
-        for row in range(2, len(df) + 2):
-            cell = worksheet.cell(row=row, column=ltg_col)
-            cell.number_format = '#,##0'
+        if 'Ltg.2meses' in df.columns:
+            ltg_col = df.columns.get_loc('Ltg.2meses') + 1
+            for row in range(2, len(df) + 2):
+                cell = worksheet.cell(row=row, column=ltg_col)
+                cell.number_format = '#,##0'
 
         # Adicionar formatação condicional para a coluna Nota
-        nota_col = df.columns.get_loc('Nota') + 1
-        for row in range(2, len(df) + 2):
-            cell = worksheet.cell(row=row, column=nota_col)
-            if cell.value >= 8:
-                cell.fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
-            elif cell.value >= 5:
-                cell.fill = PatternFill(start_color='FFEB9C', end_color='FFEB9C', fill_type='solid')
-            else:
-                cell.fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+        if 'Nota' in df.columns:
+            nota_col = df.columns.get_loc('Nota') + 1
+            for row in range(2, len(df) + 2):
+                cell = worksheet.cell(row=row, column=nota_col)
+                if cell.value >= 8:
+                    cell.fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+                elif cell.value >= 5:
+                    cell.fill = PatternFill(start_color='FFEB9C', end_color='FFEB9C', fill_type='solid')
+                else:
+                    cell.fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
 
         # Congelar painel
         worksheet.freeze_panes = 'A2'
@@ -263,7 +326,19 @@ def style_excel_output(writer, df):
         print(f"Erro ao formatar arquivo Excel: {e}")
 
 
+def verificar_arquivo_existente(nome_arquivo):
+    """Verifica se o arquivo já existe e pergunta ao usuário se deseja substituí-lo"""
+    if os.path.exists(nome_arquivo):
+        print(f"\nAVISO: O arquivo '{nome_arquivo}' já existe no diretório.")
+        # substituir = input("Deseja substituí-lo? (S/N): ").strip().upper()
+        # return substituir == 'S'
+    return True
+
+
 def main():
+    # Carregar cache de setores
+    setor_cache = load_setor_cache()
+
     print("\n=== Análise de Ações Fundamentus ===")
     print("Fonte: https://www.fundamentus.com.br/resultado.php")
 
@@ -289,24 +364,42 @@ def main():
                     # Calcular nota para cada ação
                     filtered_df['Nota'] = filtered_df.apply(calculate_score, axis=1)
 
-                    # Selecionar e ordenar colunas
+                    # Selecionar e ordenar colunas (top 30 ações)
                     final_df = filtered_df[['Papel', 'P/L', 'P/VP', 'Div.Yield', 'ROE',
-                                            'Ltg.2meses', 'Dív.Brut/ Patrim.', 'Cresc.Rec.5a', 'Nota']]
+                                            'Ltg.2meses', 'Dív.Brut/Patrim', 'Cresc.Rec.5a', 'Nota']]
                     final_df = final_df.sort_values(by=['Nota', 'Div.Yield'], ascending=[False, False])
+                    final_df = final_df.head(30)  # Pegar apenas as top 30 ações
+
+                    # Adicionar informação de setor apenas para as ações selecionadas
+                    final_df = add_setor_info(final_df, setor_cache)
+
+                    # Pegar os top 5 de cada setor
+                    top_by_sector = get_top_by_sector(final_df, 5)
 
                     try:
                         # Salvar em Excel
                         with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-                            final_df.to_excel(writer, index=False, sheet_name='Sheet1')
-                            style_excel_output(writer, final_df)
+                            # Salvar todas as ações filtradas
+                            final_df.to_excel(writer, index=False, sheet_name='Top 30 Ações')
+
+                            # Salvar os top 5 por setor (se houver setores identificados)
+                            if not top_by_sector.empty and 'Setor' in final_df.columns:
+                                top_by_sector.to_excel(writer, index=False, sheet_name='Top por Setor')
+                                style_excel_output(writer, top_by_sector, 'Top por Setor')
+
+                            # Formatar a aba principal
+                            style_excel_output(writer, final_df, 'Top 30 Ações')
 
                         print(f"\nProcesso concluído com sucesso!")
                         print(f"Arquivo salvo como: {os.path.abspath(output_file)}")
                         print(f"Total de ações encontradas: {len(final_df)}")
 
-                        if len(final_df) > 0:
-                            print("\nTop 10 ações:")
-                            print(final_df.head(10).to_string(index=False))
+                        if not top_by_sector.empty and 'Setor' in final_df.columns:
+                            print("\nTop 5 ações por setor:")
+                            for sector, group in top_by_sector.groupby('Setor'):
+                                print(f"\nSetor: {sector}")
+                                print(group[['Papel', 'Nota', 'Div.Yield', 'P/VP', 'ROE']].to_string(index=False))
+
                     except Exception as e:
                         print(f"\nErro ao salvar o arquivo: {e}")
                 else:
@@ -317,6 +410,9 @@ def main():
             print("\nErro ao processar os dados.")
     else:
         print("\nNão foi possível obter os dados do site.")
+
+    # Salvar cache antes de sair
+    save_setor_cache(setor_cache)
 
 
 if __name__ == "__main__":

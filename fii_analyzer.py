@@ -47,7 +47,7 @@ def scrape_fundamentus_fiis():
 
         # Renomear colunas para consistência
         df = df.rename(columns={
-            'Papel': 'Código',
+            'Papel': 'Papel',
             'Segmento': 'Segmento',
             'Cotação': 'Cotacao',
             'FFO Yield': 'FFO Yield',
@@ -251,7 +251,7 @@ def main():
                     filtered_df['Nota'] = filtered_df.apply(calculate_score, axis=1)
 
                     # Selecionar e ordenar colunas (adicionando as novas colunas)
-                    final_df = filtered_df[['Código', 'Segmento', 'Dividend Yield', 'P/VP',
+                    final_df = filtered_df[['Papel', 'Segmento', 'Dividend Yield', 'P/VP',
                                             'Valor de Mercado', 'Liquidez', 'Qtd Imoveis',
                                             'Vacancia Media', 'Nota']]
                     final_df = final_df.sort_values(by=['Nota', 'Dividend Yield'], ascending=[False, False])

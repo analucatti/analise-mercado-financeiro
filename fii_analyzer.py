@@ -97,9 +97,9 @@ def apply_filters(df):
         # Aplicar filtros
         filtered_df = df[
             (df['Dividend Yield'] > 0.10) &
-            (df['Dividend Yield'] < 0.16) &
+            (df['Dividend Yield'] < 0.20) &
             (df['P/VP'] > 0.60) &
-            (df['P/VP'] < 0.95) &
+            (df['P/VP'] < 1.1) &
             (df['Liquidez'] > 1000000) &
             (df['Valor de Mercado'] > 1000000000)
             ].copy()
@@ -267,8 +267,8 @@ def main():
                         print(f"Total de fundos encontrados: {len(final_df)}")
 
                         if len(final_df) > 0:
-                            print("\nTop 10 fundos:")
-                            print(final_df.head(10).to_string(index=False))
+                            print("\nTop 15 fundos:")
+                            print(final_df.head(15).to_string(index=False))
                     except Exception as e:
                         print(f"\nErro ao salvar o arquivo: {e}")
                 else:

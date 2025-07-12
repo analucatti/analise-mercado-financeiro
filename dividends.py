@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 import logging
+from collections import defaultdict
 
 # Configuração de logs
 logging.basicConfig(
@@ -15,13 +16,13 @@ logging.basicConfig(
 
 # Configurações
 TICKERS = ["BBAS3", "BBSE3", "CMIN3", "CMIG4", "PETR4", "ISAE4", "VBBR3", "BBDC3"]
-MESES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
+ANOS_HISTORICO = 3  # Quantos anos de histórico analisar
 
 
 def get_dividends(ticker):
     url = f"https://statusinvest.com.br/acao/companytickerprovents?ticker={ticker}&chartProventsType=2"
     headers = {"User-Agent": "Mozilla/5.0"}
-
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
@@ -32,131 +33,138 @@ def get_dividends(ticker):
     return None
 
 
-def format_currency(value):
-    """Formata o valor como moeda brasileira com 2 casas decimais"""
-    if pd.isna(value) or value == "":
-        return ""
-    try:
-        # Se já estiver formatado como R$, retorna o próprio valor
-        if isinstance(value, str) and value.startswith("R$"):
-            return value
-        # Converte para float e formata
-        return f"R$ {float(value):.2f}".replace(".", ",")
-    except (ValueError, TypeError):
-        return value
-
-
-def create_dividend_table(tickers):
-    df = pd.DataFrame(index=tickers, columns=MESES)
-    df.fillna("", inplace=True)
+def analyze_historical_data(tickers):
+    """Analisa padrões históricos e calcula probabilidades"""
+    historico = {}
 
     for ticker in tickers:
         data = get_dividends(ticker)
         if not data or "assetEarningsModels" not in data:
             continue
 
+        pagamentos = defaultdict(list)
+        ano_atual = datetime.now().year
+        anos_disponiveis = set()
+
         for provento in data["assetEarningsModels"]:
             try:
                 if provento["et"] == "Dividendo":
                     data_pagamento = provento["pd"]
-                    valor = provento["v"]
-
-                    # Processa apenas se tiver dados válidos
-                    if data_pagamento and valor:
-                        data_pagamento = datetime.strptime(data_pagamento, "%d/%m/%Y")
-                        mes = data_pagamento.strftime("%b").upper()
-
-                        # Consolida valores por mês
-                        if df.loc[ticker, mes] not in ["", None]:
-                            try:
-                                current = float(str(df.loc[ticker, mes]).replace('R$ ', '').replace(',', '.'))
-                                new = float(valor)
-                                total = current + new
-                                df.loc[ticker, mes] = total
-                            except ValueError:
-                                continue
-                        else:
-                            df.loc[ticker, mes] = float(valor)
-
-                        logging.info(f"[DIVIDENDO] {ticker}: {mes} = R$ {float(valor):.2f}")
-            except ValueError as e:
-                continue
+                    if data_pagamento:
+                        data_pag = datetime.strptime(data_pagamento, "%d/%m/%Y")
+                        anos_disponiveis.add(data_pag.year)
+                        mes = data_pag.strftime("%b").upper()
+                        # Ajuste para os meses em português
+                        mes = mes.replace("APR", "ABR").replace("MAY", "MAI").replace("AUG", "AGO").replace("SEP",
+                                                                                                            "SET").replace(
+                            "OCT", "OUT").replace("DEC", "DEZ")
+                        pagamentos[mes].append(data_pag.year)
             except Exception as e:
-                logging.error(f"Erro inesperado ao processar {ticker}: {str(e)}")
+                logging.error(f"Erro ao processar {ticker}: {str(e)}")
                 continue
 
-    # Formata todos os valores como moeda
-    for col in df.columns:
-        df[col] = df[col].apply(lambda x: format_currency(x) if x not in ["", None] else "")
-    return df
+        # Calcula probabilidade para cada mês
+        total_anos = len(anos_disponiveis)
+        probabilidades = {}
+        valores_medios = {}
+
+        for mes, anos in pagamentos.items():
+            # Probabilidade baseada na frequência histórica
+            prob = len(set(anos)) / min(total_anos, ANOS_HISTORICO) * 100
+            probabilidades[mes] = min(round(prob), 100)  # Limita a 100%
+
+            # Calcula valor médio (simplificado)
+            valores = [float(p["v"]) for p in data["assetEarningsModels"]
+                       if p["et"] == "Dividendo" and
+                       datetime.strptime(p["pd"], "%d/%m/%Y").strftime("%b").upper().replace("APR", "ABR").replace(
+                           "MAY", "MAI").replace("AUG", "AGO").replace("SEP", "SET").replace("OCT", "OUT").replace(
+                           "DEC", "DEZ") == mes]
+            if valores:
+                valores_medios[mes] = sum(valores) / len(valores)
+
+        historico[ticker] = {
+            'probabilidades': probabilidades,
+            'valores_medios': valores_medios,
+            'total_anos_analisados': min(total_anos, ANOS_HISTORICO)
+        }
+
+    return historico
 
 
-def add_summary_row(df):
-    """Adiciona uma linha de soma ao final do DataFrame"""
-    summary = pd.DataFrame(index=["TOTAL"], columns=df.columns)
+def create_dividend_table(historico):
+    """Cria tabela de dividendos com probabilidades"""
+    df_prob = pd.DataFrame(index=TICKERS, columns=MESES)
+    df_valores = pd.DataFrame(index=TICKERS, columns=MESES)
 
-    for mes in df.columns:
-        total = 0.0
-        for valor in df[mes]:
-            if valor and valor != "":
-                try:
-                    # Remove 'R$ ' e converte vírgula para ponto
-                    num = float(str(valor).replace('R$ ', '').replace(',', '.'))
-                    total += num
-                except ValueError:
-                    continue
-        if total > 0:
-            summary.loc["TOTAL", mes] = format_currency(total)
-        else:
-            summary.loc["TOTAL", mes] = ""
+    for ticker, data in historico.items():
+        for mes in MESES:
+            if mes in data['probabilidades']:
+                prob = data['probabilidades'][mes]
+                valor = data['valores_medios'].get(mes, 0)
 
-    return pd.concat([df, summary])
+                # Formata a célula com probabilidade e valor
+                df_prob.loc[ticker, mes] = f"{prob}%"
+                df_valores.loc[ticker, mes] = f"R$ {valor:.2f}".replace(".", ",")
+
+    return df_prob, df_valores
+
+
+def generate_markdown(prob_table, value_table, historico):
+    """Gera relatório em Markdown com os dados formatados"""
+    md_content = "# PREVISÃO DE DIVIDENDOS\n\n"
+
+    # Tabela principal
+    md_content += "| Ativo | " + " | ".join(MESES) + " |\n"
+    md_content += "|-------|" + "|".join(["---"] * len(MESES)) + "|\n"
+
+    for ticker in TICKERS:
+        if ticker in historico:
+            md_content += f"| **{ticker}** |"
+            for mes in MESES:
+                prob = prob_table.loc[ticker, mes]
+                valor = value_table.loc[ticker, mes]
+                if pd.isna(prob):
+                    md_content += " |"
+                else:
+                    md_content += f" {prob} ({valor}) |"
+            md_content += "\n"
+
+    # Detalhes por ativo
+    md_content += "\n## Detalhes por Ativo\n"
+    for ticker, data in historico.items():
+        md_content += f"\n### {ticker}\n"
+        md_content += f"**Anos analisados:** {data['total_anos_analisados']}\n\n"
+
+        for mes, prob in data['probabilidades'].items():
+            valor = data['valores_medios'].get(mes, 0)
+            md_content += (
+                f"- **{mes}:** {prob}% de probabilidade | "
+                f"Valor médio: R$ {valor:.2f}\n".replace(".", ",")
+            )
+
+    return md_content
 
 
 if __name__ == "__main__":
     logging.info("==== INÍCIO DA EXECUÇÃO ====")
 
-    tabela = create_dividend_table(TICKERS)
+    # 1. Analisa dados históricos
+    historico = analyze_historical_data(TICKERS)
 
-    # Garante todas as colunas de meses
-    for mes in MESES:
-        if mes not in tabela.columns:
-            tabela[mes] = ""
-    tabela = tabela[MESES]  # Reordena colunas
+    # 2. Cria tabelas
+    prob_table, value_table = create_dividend_table(historico)
 
-    # Cria tabela com soma para o Markdown
-    tabela_com_soma = add_summary_row(tabela)
+    # 3. Gera Markdown
+    md_content = generate_markdown(prob_table, value_table, historico)
 
+    # 4. Salva resultados
+    with open("PREVISAO_DIVIDENDOS.md", "w", encoding="utf-8") as f:
+        f.write(md_content)
+    logging.info("Markdown salvo em 'PREVISAO_DIVIDENDOS.md'")
 
-    # Prepara saída formatada
-    def format_value(x):
-        return x if x not in ["", None] else "-"
-
-
-    # Salva os resultados
-    try:
-        # Excel - mantém células vazias (sem soma)
-        # Remove formatação de moeda para o Excel
-        tabela_sem_format = tabela.copy()
-        tabela_sem_format = tabela_sem_format.applymap(
-            lambda x: float(str(x).replace('R$ ', '').replace(',', '.'))
-            if x not in ["", None] else "")
-        tabela_sem_format.to_excel("dividendos.xlsx")
-        logging.info("Planilha salva em 'dividendos.xlsx'")
-
-        # Markdown - substitui vazios por espaço e inclui soma
-        with open("dividendos.md", "w", encoding="utf-8") as f:
-            f.write("# PREVISÃO DE DIVIDENDOS\n\n")
-            md_table = tabela_com_soma.copy().applymap(format_value)
-            f.write(md_table.to_markdown())
-        logging.info("Markdown salvo em 'dividendos.md'")
-
-        # Console - exibe tabela formatada (sem soma)
-        print("\nTABELA DE DIVIDENDOS:")
-        console_table = tabela.copy().applymap(format_value)
-        print(console_table.to_string())
-
-    except Exception as e:
-        logging.error(f"Erro ao salvar arquivos: {str(e)}")
+    # 5. Salva tabela de valores para Excel
+    value_table.fillna("", inplace=True)
+    value_table.to_excel("valores_dividendos.xlsx")
+    logging.info("Planilha salva em 'valores_dividendos.xlsx'")
 
     logging.info("==== FIM DA EXECUÇÃO ====")

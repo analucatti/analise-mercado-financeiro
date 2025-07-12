@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 # Configurações
-TICKERS = ["BBAS3", "BBSE3", "CMIN3", "CMIG4", "PETR4", "ISAE4", "VBBR3", "BBDC3"]
+TICKERS = ["BBSE3", "BBDC3", "BBAS3", "VIVT3", "SAPR11", "CMIG4", "ISAE4", "VBBR3", "PETR4", "CMIN3"]
 MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
 ANOS_HISTORICO = 3  # Quantos anos de histórico analisar
 
@@ -48,7 +48,7 @@ def analyze_historical_data(tickers):
 
         for provento in data["assetEarningsModels"]:
             try:
-                if provento["et"] == "Dividendo":
+                if provento["et"] in ["Dividendo","JCP"]:
                     data_pagamento = provento["pd"]
                     if data_pagamento:
                         data_pag = datetime.strptime(data_pagamento, "%d/%m/%Y")

@@ -1,165 +1,165 @@
-# 📊 Sistema Avançado de Análise de Investimentos
+# 📊 Advanced Investment Analysis System
 
-## 🚀 Visão Geral
-Suite completa de análise fundamentalista para o mercado brasileiro, com três módulos especializados para tomada de decisão baseada em dados.
+## 🚀 Overview
+Complete fundamental analysis suite for the Brazilian market, with three specialized modules for data-driven decision making.
 
 ---
 
-## 📌 Módulos Disponíveis
+## 📌 Available Modules
 
-### 1️⃣ **Análise de Fundos Imobiliários (FIIs)**
+### 1️⃣ **Real Estate Investment Funds (REITs/FIIs) Analysis**
 
-#### 🏗️ Arquitetura Modular
-- **`FundamentusScraper`**: Coleta dados com retry automático
-- **`DataProcessor`**: Limpeza e validação de dados
-- **`FIIAnalyzer`**: Motor de análise e scoring
-- **`ExcelExporter`**: Geração de relatórios formatados
+#### 🏗️ Modular Architecture
+- **`FundamentusScraper`**: Data collection with automatic retry
+- **`DataProcessor`**: Data cleaning and validation
+- **`FIIAnalyzer`**: Analysis and scoring engine
+- **`ExcelExporter`**: Formatted report generation
 
-#### 🔍 Funcionalidades Principais
+#### 🔍 Main Features
 
-**📥 Coleta de Dados**
-- Raspagem do [Fundamentus](https://www.fundamentus.com.br/fii_resultado.php)
-- Session pooling para melhor performance
-- Retry automático com backoff exponencial
-- Tratamento robusto de erros
+**📥 Data Collection**
+- Web scraping from [Fundamentus](https://www.fundamentus.com.br/fii_resultado.php)
+- Session pooling for better performance
+- Automatic retry with exponential backoff
+- Robust error handling
 
-**🎯 Sistema de Filtros Configuráveis**
+**🎯 Configurable Filter System**
 ```python
 FilterCriteria:
   - Dividend Yield: 7% - 25%
   - P/VP: 0.5 - 1.1
-  - Liquidez: > R$ 1.000.000
-  - Valor Mercado: > R$ 1.000.000.000
+  - Liquidity: > R$ 1,000,000
+  - Market Value: > R$ 1,000,000,000
 ```
 
-**⭐ Scoring Avançado (0-10 pontos)**
+**⭐ Advanced Scoring (0-10 points)**
 
-| Métrica | Excelente (+2) | Bom (+1) | Peso |
+| Metric | Excellent (+2) | Good (+1) | Weight |
 |---------|---------------|----------|------|
-| DY | ≥14% | ≥12% | Alto |
-| P/VP | ≤0.80 | ≤0.85 | Alto |
-| Liquidez | ≥R$5M | ≥R$2M | Médio |
-| Valor Mercado | ≥R$2B | ≥R$1.5B | Médio |
-| Vacância | ≤5% | ≤10% | Alto |
+| DY | ≥14% | ≥12% | High |
+| P/VP | ≤0.80 | ≤0.85 | High |
+| Liquidity | ≥R$5M | ≥R$2M | Medium |
+| Market Value | ≥R$2B | ≥R$1.5B | Medium |
+| Vacancy | ≤5% | ≤10% | High |
 
-**📤 Saídas**
-- Excel multi-abas com formatação profissional
-- Top 5 fundos por segmento
-- Análise estatística completa
-- Logs detalhados para auditoria
+**📤 Outputs**
+- Multi-tab Excel with professional formatting
+- Top 5 funds by segment
+- Complete statistical analysis
+- Detailed logs for auditing
 
 ---
 
-### 2️⃣ **Análise de Ações**
+### 2️⃣ **Stock Analysis**
 
-#### 🏗️ Arquitetura Otimizada
-- **`StatusInvestScraper`**: Coleta paralela com ThreadPool
-- **`SectorEnricher`**: Enriquecimento com setores (multi-thread)
-- **`StockAnalyzer`**: Análise fundamentalista
-- **`SectorCache`**: Cache inteligente thread-safe
+#### 🏗️ Optimized Architecture
+- **`StatusInvestScraper`**: Parallel collection with ThreadPool
+- **`SectorEnricher`**: Sector enrichment (multi-thread)
+- **`StockAnalyzer`**: Fundamental analysis
+- **`SectorCache`**: Thread-safe intelligent cache
 
-#### 🔍 Funcionalidades Avançadas
+#### 🔍 Advanced Features
 
 **🚄 Performance**
-- **Coleta paralela**: 5-10x mais rápido
-- **Cache persistente**: Reduz requisições em 90%
-- **Rate limiting**: Evita bloqueios
-- **Session reuse**: Conexões otimizadas
+- **Parallel collection**: 5-10x faster
+- **Persistent cache**: Reduces requests by 90%
+- **Rate limiting**: Prevents blocking
+- **Session reuse**: Optimized connections
 
-**🎯 Filtros Fundamentalistas**
+**🎯 Fundamentalist Filters**
 ```python
 FilterCriteria:
-  - P/L: 3.0 - 12.0
-  - P/VP: 0.5 - 1.1  
+  - P/E: 3.0 - 12.0
+  - P/BV: 0.5 - 1.1  
   - ROE: 14% - 50%
   - DY: 7% - 25%
-  - Crescimento 5a: > 10%
-  - Dívida/Patrimônio: < 2.0
-  - Liquidez 2m: > R$ 1.000.000
+  - 5-year Growth: > 10%
+  - Debt/Equity: < 2.0
+  - 2-month Liquidity: > R$ 1,000,000
 ```
 
-**⭐ Sistema de Pontuação (0-14 pontos)**
+**⭐ Scoring System (0-14 points)**
 
-| Indicador | Excelente (+2) | Bom (+1) | Importância |
+| Indicator | Excellent (+2) | Good (+1) | Importance |
 |-----------|---------------|----------|-------------|
-| P/L | ≤5 | ≤7 | Critical |
-| P/VP | ≤0.7 | ≤0.9 | Critical |
+| P/E | ≤5 | ≤7 | Critical |
+| P/BV | ≤0.7 | ≤0.9 | Critical |
 | DY | ≥12% | ≥9% | High |
 | ROE | ≥20% | ≥17% | High |
-| Crescimento | ≥20% | ≥15% | Medium |
-| Dívida/Patrim | ≤0.5 | ≤1.0 | High |
-| Liquidez | ≥R$50M | ≥R$10M | Medium |
+| Growth | ≥20% | ≥15% | Medium |
+| Debt/Equity | ≤0.5 | ≤1.0 | High |
+| Liquidity | ≥R$50M | ≥R$10M | Medium |
 
-**📊 Recursos Extras**
-- Identificação automática de setores
-- Cache JSON para otimização
-- Top 30 ações rankeadas
-- Top 5 por setor
-- Análise estatística do portfólio
+**📊 Extra Features**
+- Automatic sector identification
+- JSON cache for optimization
+- Top 30 ranked stocks
+- Top 5 by sector
+- Portfolio statistical analysis
 
 ---
 
-### 3️⃣ **Sistema de Previsão de Dividendos** 🆕
+### 3️⃣ **Dividend Prediction System** 🆕
 
-#### 🏗️ Arquitetura Preditiva
-- **`StatusInvestScraper`**: Coleta histórica de proventos
+#### 🏗️ Predictive Architecture
+- **`StatusInvestScraper`**: Historical dividend collection
 - **`DividendAnalyzer`**: Machine Learning-like predictions
-- **`DividendCache`**: Cache com TTL configurável
-- **`ReportGenerator`**: Relatórios multi-formato
+- **`DividendCache`**: Cache with configurable TTL
+- **`ReportGenerator`**: Multi-format reports
 
-#### 🔮 Funcionalidades de IA
+#### 🔮 AI Features
 
-**📈 Análise Preditiva**
-- Detecção automática de padrões de pagamento
-- Cálculo de probabilidades mensais
-- Previsão de próximos pagamentos
-- Score de confiança para cada previsão
+**📈 Predictive Analysis**
+- Automatic payment pattern detection
+- Monthly probability calculation
+- Next payment predictions
+- Confidence score for each prediction
 
-**🎯 Métricas Estatísticas**
+**🎯 Statistical Metrics**
 ```python
 MonthlyStatistics:
-  - Probabilidade de pagamento
-  - Valor médio histórico
-  - Desvio padrão
-  - Mediana dos valores
-  - Anos de ocorrência
-  - Score de confiança
+  - Payment probability
+  - Historical average value
+  - Standard deviation
+  - Median values
+  - Years of occurrence
+  - Confidence score
 ```
 
-**🔍 Padrões Detectados**
-- **Mensal**: Pagamentos regulares mensais
-- **Trimestral**: A cada 3 meses
-- **Semestral**: 2x ao ano
-- **Anual**: 1x ao ano
-- **Irregular**: Sem padrão definido
+**🔍 Detected Patterns**
+- **Monthly**: Regular monthly payments
+- **Quarterly**: Every 3 months
+- **Semi-annual**: 2x per year
+- **Annual**: 1x per year
+- **Irregular**: No defined pattern
 
-**📊 Relatórios Gerados**
+**📊 Generated Reports**
 
-1. **Markdown** (`PREVISAO_DIVIDENDOS.md`)
-   - Tabela de probabilidades
-   - Previsões com confiança
-   - Análise detalhada por ativo
+1. **Markdown** (`DIVIDEND_PREDICTION.md`)
+   - Probability table
+   - Predictions with confidence
+   - Detailed analysis by asset
 
-2. **Excel** (`dividendos_analise.xlsx`)
-   - Aba de probabilidades
-   - Aba de previsões
-   - Aba de estatísticas
+2. **Excel** (`dividend_analysis.xlsx`)
+   - Probabilities tab
+   - Predictions tab
+   - Statistics tab
 
-3. **JSON** (`dividendos_data.json`)
-   - Dados estruturados para APIs
-   - Metadados completos
-   - Serialização de objetos
+3. **JSON** (`dividend_data.json`)
+   - Structured data for APIs
+   - Complete metadata
+   - Object serialization
 
 ---
 
-## ⚙️ Instalação e Configuração
+## ⚙️ Installation and Configuration
 
-### 📋 Requisitos
+### 📋 Requirements
 ```bash
 Python 3.8+
 ```
 
-### 📦 Dependências
+### 📦 Dependencies
 ```bash
 pip install -r requirements.txt
 ```
@@ -174,7 +174,7 @@ numpy>=1.23.0
 lxml>=4.9.0
 ```
 
-### 🔧 Configuração Personalizada
+### 🔧 Custom Configuration
 
 ```python
 # FII Configuration
@@ -183,7 +183,7 @@ from fii_analyzer import FIIApplication, ScraperConfig, FilterCriteria
 config = ScraperConfig(
     timeout=30,
     max_workers=5,
-    output_filename="meus_fiis.xlsx"
+    output_filename="my_reits.xlsx"
 )
 
 filters = FilterCriteria(
@@ -200,10 +200,10 @@ app.run()
 from stock_analyzer import StockApplication, ScraperConfig
 
 config = ScraperConfig(
-    max_workers=10,           # Mais threads
-    rate_limit_delay=0.3,     # Mais rápido
+    max_workers=10,           # More threads
+    rate_limit_delay=0.3,     # Faster
     top_stocks_limit=50,      # Top 50
-    cache_filename="meu_cache.json"
+    cache_filename="my_cache.json"
 )
 
 app = StockApplication(config=config)
@@ -215,9 +215,9 @@ app.run()
 from dividend_predictor import DividendPredictionSystem, ScraperConfig
 
 config = ScraperConfig(
-    years_to_analyze=5,        # 5 anos de histórico
-    cache_ttl_hours=48,        # Cache de 2 dias
-    min_confidence_threshold=0.7,  # 70% confiança mínima
+    years_to_analyze=5,        # 5 years of history
+    cache_ttl_hours=48,        # 2-day cache
+    min_confidence_threshold=0.7,  # 70% minimum confidence
     default_tickers=["VALE3", "PETR4", "BBDC4"]
 )
 
@@ -227,28 +227,28 @@ system.run()
 
 ---
 
-## 🚀 Execução
+## 🚀 Execution
 
-### Modo Básico
+### Basic Mode
 ```bash
-# Análise de FIIs
+# REIT Analysis
 python fii_analyzer.py
 
-# Análise de Ações
+# Stock Analysis
 python stock_analyzer.py
 
-# Previsão de Dividendos
+# Dividend Prediction
 python dividend_predictor.py
 ```
 
-### Modo Avançado
+### Advanced Mode
 ```python
-# Script customizado
+# Custom script
 from fii_analyzer import FIIApplication
 from stock_analyzer import StockApplication
 from dividend_predictor import DividendPredictionSystem
 
-# Executar todas as análises
+# Run all analyses
 fii_app = FIIApplication()
 fii_app.run()
 
@@ -262,134 +262,134 @@ dividend_system.run(tickers)
 
 ---
 
-## 📂 Estrutura de Saída
+## 📂 Output Structure
 
 ```
-📂 resultados/
+📂 results/
 ├── 📊 Excel/
-│   ├── fundos_imobiliarios_filtrados.xlsx
-│   ├── acoes_filtradas_fundamentus.xlsx
-│   └── dividendos_analise.xlsx
-├── 📝 Relatórios/
-│   └── PREVISAO_DIVIDENDOS.md
+│   ├── filtered_real_estate_funds.xlsx
+│   ├── filtered_stocks_fundamentus.xlsx
+│   └── dividend_analysis.xlsx
+├── 📝 Reports/
+│   └── DIVIDEND_PREDICTION.md
 ├── 💾 Cache/
-│   ├── setor_cache.json
+│   ├── sector_cache.json
 │   └── .dividend_cache/
 └── 📜 Logs/
-    └── dividendos.log
+    └── dividends.log
 ```
 
 ---
 
-## 🎨 Recursos Visuais
+## 🎨 Visual Features
 
-### Formatação Excel
-- 🟢 **Verde**: Nota ≥ 8 (Excelente)
-- 🟡 **Amarelo**: Nota 5-7 (Bom)
-- 🔴 **Vermelho**: Nota < 5 (Atenção)
+### Excel Formatting
+- 🟢 **Green**: Score ≥ 8 (Excellent)
+- 🟡 **Yellow**: Score 5-7 (Good)
+- 🔴 **Red**: Score < 5 (Attention)
 
-### Indicadores de Confiança
-- ⭐⭐⭐ Alta confiança (>80%)
-- ⭐⭐ Média confiança (60-80%)
-- ⭐ Baixa confiança (<60%)
-
----
-
-## 🔒 Recursos de Segurança
-
-- ✅ **Type hints** completos
-- ✅ **Docstrings** detalhadas
-- ✅ **Error handling** robusto
-- ✅ **Logging** estruturado
-- ✅ **Thread-safety** garantido
-- ✅ **Rate limiting** automático
-- ✅ **Retry com backoff**
-- ✅ **Validação de dados**
+### Confidence Indicators
+- ⭐⭐⭐ High confidence (>80%)
+- ⭐⭐ Medium confidence (60-80%)
+- ⭐ Low confidence (<60%)
 
 ---
 
-## 📊 Métricas de Performance
+## 🔒 Security Features
 
-| Operação | Tempo Original | Tempo Otimizado | Melhoria |
+- ✅ Complete **type hints**
+- ✅ Detailed **docstrings**
+- ✅ Robust **error handling**
+- ✅ Structured **logging**
+- ✅ Guaranteed **thread-safety**
+- ✅ Automatic **rate limiting**
+- ✅ **Retry with backoff**
+- ✅ **Data validation**
+
+---
+
+## 📊 Performance Metrics
+
+| Operation | Original Time | Optimized Time | Improvement |
 |----------|---------------|-----------------|----------|
-| Coleta FIIs | ~30s | ~5s | 6x |
-| Análise Ações + Setores | ~180s | ~20s | 9x |
-| Previsão Dividendos (10 ativos) | ~60s | ~8s | 7.5x |
+| REIT Collection | ~30s | ~5s | 6x |
+| Stock Analysis + Sectors | ~180s | ~20s | 9x |
+| Dividend Prediction (10 assets) | ~60s | ~8s | 7.5x |
 | Cache Hit Rate | 0% | 90%+ | ∞ |
 
 ---
 
 ## 🛠️ Troubleshooting
 
-### Problemas Comuns
+### Common Issues
 
-**1. Timeout em requisições**
+**1. Request timeout**
 ```python
-config = ScraperConfig(timeout=60)  # Aumentar timeout
+config = ScraperConfig(timeout=60)  # Increase timeout
 ```
 
 **2. Rate limiting**
 ```python
-config = ScraperConfig(rate_limit_delay=2.0)  # Mais delay
+config = ScraperConfig(rate_limit_delay=2.0)  # More delay
 ```
 
-**3. Cache corrompido**
+**3. Corrupted cache**
 ```python
-system.clear_cache()  # Limpar cache
+system.clear_cache()  # Clear cache
 ```
 
 ---
 
-## 📈 Roadmap Futuro
+## 📈 Future Roadmap
 
-- [ ] API REST para integração
-- [ ] Dashboard web interativo
-- [ ] Alertas automáticos
-- [ ] Backtesting de estratégias
-- [ ] Machine Learning avançado
-- [ ] Integração com corretoras
-
----
-
-## 📚 Documentação Técnica
-
-Cada módulo possui:
-- **Dataclasses** para configuração
-- **Custom Exceptions** para erros
-- **Type Hints** completos
-- **Docstrings** no formato Google
-- **Logging** configurável
-- **Tests** unitários (em desenvolvimento)
+- [ ] REST API for integration
+- [ ] Interactive web dashboard
+- [ ] Automatic alerts
+- [ ] Strategy backtesting
+- [ ] Advanced Machine Learning
+- [ ] Broker integration
 
 ---
 
-## 🤝 Contribuindo
+## 📚 Technical Documentation
 
-1. Fork o projeto
-2. Crie sua feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
----
-
-## 📄 Licença
-
-Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
+Each module includes:
+- **Dataclasses** for configuration
+- **Custom Exceptions** for errors
+- Complete **Type Hints**
+- **Docstrings** in Google format
+- Configurable **Logging**
+- Unit **Tests** (in development)
 
 ---
 
-## 📧 Contato
+## 🤝 Contributing
 
-**Suporte**: analucatti23@gmail.com  
-**GitHub**: [github.com/seu-usuario/investment-analyzer](https://github.com)
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 📧 Contact
+
+**Support**: analucatti23@gmail.com  
+**GitHub**: [github.com/your-username/investment-analyzer](https://github.com)
 
 ---
 
 ## ⚠️ Disclaimer
 
-Este software é fornecido apenas para fins educacionais e informativos. Não constitui recomendação de investimento. Sempre consulte um profissional qualificado antes de tomar decisões de investimento.
+This software is provided for educational and informational purposes only. It does not constitute investment advice. Always consult a qualified professional before making investment decisions.
 
 ---
 
-*Última atualização: 2024 | Versão 2.0.0*
+*Last updated: 2025 | Version 2.0.0*
